@@ -1,6 +1,17 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import Bonjour, { Service } from 'bonjour-service';
 
 // Remember to rename these classes and interfaces!
+
+const startBonjour = (onServiceUp: (service: Service) => void) => {
+	const bonjour = new Bonjour();
+	const browser = bonjour.find({ type: 'http' });
+
+	browser.on('up', onServiceUp);
+	browser.start();
+
+	new Notice('Bonjour started!');
+}
 
 interface MyPluginSettings {
 	mySetting: string;
@@ -13,11 +24,16 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 export default class MyPlugin extends Plugin {
 	settings: MyPluginSettings;
 
+	onServiceUp(service: Service) {
+		console.log('service up', service);
+		new Notice(`Service up: ${service.name}`);
+	}
+
 	async onload() {
 		await this.loadSettings();
 
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('dice', 'Journal Status', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			new Notice('This is a notice!');
 		});
@@ -76,6 +92,8 @@ export default class MyPlugin extends Plugin {
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+
+		startBonjour(this.onServiceUp.bind(this));
 	}
 
 	onunload() {
